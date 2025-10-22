@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package glossary;
+
+service GlossaryService {
+  rpc GetTerm(GetTermRequest) returns (TermResponse);
+  rpc SearchTerms(SearchTermsRequest) returns (SearchTermsResponse);
+  rpc AddTerm(AddTermRequest) returns (OperationResponse);
+  rpc UpdateTerm(UpdateTermRequest) returns (OperationResponse);
+  rpc DeleteTerm(DeleteTermRequest) returns (OperationResponse);
+  rpc ListAllTerms(ListAllRequest) returns (ListAllResponse);
+}
+
+message GetTermRequest {
+  string term = 1;
+}
+
+message SearchTermsRequest {
+  string query = 1;
+}
+
+message AddTermRequest {
+  string term = 1;
+  string definition = 2;
+  string category = 3;
+  repeated string examples = 4;
+}
+
+message UpdateTermRequest {
+  string term = 1;
+  string definition = 2;
+  string category = 3;
+  repeated string examples = 4;
+}
+
+message DeleteTermRequest {
+  string term = 1;
+}
+
+message ListAllRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message TermResponse {
+  string term = 1;
+  string definition = 2;
+  string category = 3;
+  repeated string examples = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message SearchTermsResponse {
+  repeated TermResponse terms = 1;
+  int32 total_count = 2;
+}
+
+message ListAllResponse {
+  repeated TermResponse terms = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message OperationResponse {
+  bool success = 1;
+  string message = 2;
+}
