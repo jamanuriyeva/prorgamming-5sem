@@ -1,0 +1,9 @@
+services:
+  glossary-web:
+    build: .
+    ports:
+      - "5000:5000"
+      - "50051:50051"
+    volumes:
+      - ./glossary_data.json:/app/glossary_data.json
+    restart: unless-stopped
