@@ -41,8 +41,7 @@ asyncio.create_task(fetcher.start_monitoring(interval=300))
 ---
 
 ## Скриншоты
-![](https://github.com/jamanuriyeva/prorgamming-5sem/blob/5cf52fed411f6cbcc355093e00c766c0cb4f0d66/LR6/pics/1.png)
-
-![](https://github.com/jamanuriyeva/prorgamming-5sem/blob/5cf52fed411f6cbcc355093e00c766c0cb4f0d66/LR6/pics/2.png)
+![](https://github.com/jamanuriyeva/prorgamming-5sem/blob/32f810fcb08a84c21d9ebd1209f7d2db50a00a31/LR6/pics/111111111.png)
 
 ![](https://github.com/jamanuriyeva/prorgamming-5sem/blob/5cf52fed411f6cbcc355093e00c766c0cb4f0d66/LR6/pics/3.png)
+
