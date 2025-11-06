@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Курсы валют</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #ffeeed;
+        }
+        .header {
+            background: #ffc0cb;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .info-panel {
+            background: #ffc0cb;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .connected { background: #27ae60; color: white; }
+        .disconnected { background: #e74c3c; color: white; }
+        .currency-card {
+            background: white;
+            padding: 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .currency-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .currency-item:last-child {
+            border-bottom: none;
+        }
+        .currency-left {
+            flex: 1;
+        }
+        .currency-code {
+            font-weight: bold;
+            font-size: 18px;
+            color: #ffc0cb;
+        }
+        .currency-name {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .currency-rate {
+            font-weight: bold;
+            font-size: 18px;
+            color: #2980b9;
+        }
+        .last-update {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            margin-top: 20px;
+        }
+        .observer-count {
+            background: #ffc0cb;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💰 Курсы валют</h1>
+        <p>ЦБ РФ в реальном времени</p>
+    </div>
+
+    <div class="info-panel">
+        ID наблюдателя: <strong id="observerId">-</strong>
+    </div>
+
+    <div class="observer-count">
+        👥 Наблюдателей онлайн: <strong id="observerCount">0</strong>
+    </div>
+
+    <div id="status" class="status disconnected">
+        🔴 Отключено от сервера
+    </div>
+
+    <div class="currency-card">
+        <div class="currency-item">
+            <div class="currency-left">
+                <div class="currency-code">USD</div>
+                <div class="currency-name">Доллар США</div>
+            </div>
+            <div class="currency-rate" id="rate-USD">-</div>
+        </div>
+
+        <div class="currency-item">
+            <div class="currency-left">
+                <div class="currency-code">EUR</div>
+                <div class="currency-name">Евро</div>
+            </div>
+            <div class="currency-rate" id="rate-EUR">-</div>
+        </div>
+
+        <div class="currency-item">
+            <div class="currency-left">
+                <div class="currency-code">GBP</div>
+                <div class="currency-name">Британский фунт</div>
+            </div>
+            <div class="currency-rate" id="rate-GBP">-</div>
+        </div>
+
+        <div class="currency-item">
+            <div class="currency-left">
+                <div class="currency-code">CNY</div>
+                <div class="currency-name">Китайский юань</div>
+            </div>
+            <div class="currency-rate" id="rate-CNY">-</div>
+        </div>
+
+        <div class="currency-item">
+            <div class="currency-left">
+                <div class="currency-code">JPY</div>
+                <div class="currency-name">Японская иена</div>
+            </div>
+            <div class="currency-rate" id="rate-JPY">-</div>
+        </div>
+    </div>
+
+    <div class="last-update" id="lastUpdate">
+        Последнее обновление: никогда
+    </div>
+
+    <script>
+        class CurrencyClient {
+            constructor() {
+                this.ws = null;
+                this.isConnected = false;
+                this.observerId = Math.floor(Math.random() * 1000); // Простой ID
+                this.connect();
+            }
+
+            connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/websocket`;
+                console.log('🔄 Подключение к:', wsUrl);
+
+                this.ws = new WebSocket(wsUrl);
+
+                this.ws.onopen = () => {
+                    console.log('✅ WebSocket подключен');
+                    this.isConnected = true;
+                    this.updateStatus('🟢 Подключено к серверу', 'connected');
+                    // Устанавливаем ID наблюдателя
+                    document.getElementById('observerId').textContent = this.observerId;
+                };
+
+                this.ws.onclose = () => {
+                    console.log('❌ WebSocket отключен');
+                    this.isConnected = false;
+                    this.updateStatus('🔴 Отключено. Переподключение...', 'disconnected');
+                    setTimeout(() => this.connect(), 3000);
+                };
+
+                this.ws.onerror = (error) => {
+                    console.error('💥 Ошибка WebSocket:', error);
+                };
+
+                this.ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('📨 Получены данные:', data);
+                        this.handleMessage(data);
+                    } catch (error) {
+                        console.error('❌ Ошибка парсинга:', error);
+                    }
+                };
+            }
+
+            handleMessage(data) {
+                switch(data.type) {
+                    case 'currency_rates':
+                        this.updateRates(data);
+                        break;
+                    case 'observer_count':
+                        this.updateObserverCount(data);
+                        break;
+                }
+            }
+
+            updateRates(data) {
+                console.log('💱 Обновление курсов:', data.rates);
+
+                // Обновляем время
+                const time = new Date(data.timestamp).toLocaleTimeString('ru-RU');
+                document.getElementById('lastUpdate').textContent = `Последнее обновление: ${time}`;
+
+                // Обновляем курсы
+                if (data.rates) {
+                    for (const [currency, rate] of Object.entries(data.rates)) {
+                        const element = document.getElementById(`rate-${currency}`);
+                        if (element) {
+                            element.textContent = parseFloat(rate).toFixed(2) + ' руб.';
+                            console.log(`📊 ${currency}: ${rate}`);
+                        }
+                    }
+                }
+
+                // Обновляем счетчик наблюдателей если есть в данных
+                if (data.observer_count !== undefined) {
+                    this.updateObserverCount({count: data.observer_count});
+                }
+            }
+
+            updateObserverCount(data) {
+                const countElement = document.getElementById('observerCount');
+                countElement.textContent = data.count;
+                console.log(`👥 Наблюдателей: ${data.count}`);
+            }
+
+            updateStatus(message, className) {
+                const status = document.getElementById('status');
+                status.textContent = message;
+                status.className = `status ${className}`;
+            }
+        }
+
+        // Запуск при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Страница загружена');
+            window.client = new CurrencyClient();
+        });
+    </script>
+</body>
+</html>
